@@ -2,7 +2,8 @@
 
 Finance management for small/medium businesses in Uzbekistan. Log income and
 expenses by simply **texting or sending a voice message to a Telegram bot**,
-then track everything on a **multi-page web dashboard**.
+then track everything on a **multi-page web dashboard** — in Uzbek, Russian,
+or English, light or dark mode.
 
 > Built for the data365 agency assessment (Task 01).
 
@@ -18,12 +19,21 @@ then track everything on a **multi-page web dashboard**.
 > inactivity, so the *first* request after a while can take 30–50s to wake up.
 > Message the bot once first to warm it up before opening the dashboard.
 
+**How to sign in:** message the bot **`/login`** (or tap the button under
+`/start`) — it replies with a one-click dashboard link tied to your own
+Telegram account. This is more reliable than Telegram's official Login Widget
+button (also on the page), whose confirmation message can be delayed by
+Telegram's own servers for some phone numbers/regions.
+
 - **Telegram bot** — text + voice, automatic transcription, intent detection,
   natural confirmations, follow-up questions, reports, corrections, custom
   categories. Never fails silently, even with garbled voice transcription.
-- **Web dashboard** — Overview, Transactions, Analytics, Categories,
-  Onboarding + Telegram login (each user sees only their own data), and
-  monthly **Budget Alerts** (extra feature).
+- **Web dashboard** — Overview, Transactions, Analytics, Categories, Budgets,
+  Onboarding, per-user login, live updates. **UZ / RU / EN** language switcher
+  and a **dark / light** theme toggle, both saved per browser.
+- **Budget alerts** — set a monthly limit (overall or per category) on the
+  Budgets page; the dashboard and bot both warn you when you're close to or
+  over it.
 - **Free-tier AI** — Groq (free API) runs both voice transcription
   (Whisper large-v3) and message understanding (Llama 3.3 70B), so parsing is
   robust even against messy transcriptions. Falls back to a fully offline
@@ -41,10 +51,11 @@ to the bot appears on the dashboard immediately:
         Frontend (static HTML/CSS/JS)          Backend (FastAPI, async)
         Vercel                                 Render
         ┌─────────────────────┐   JWT / REST   ┌──────────────────────────┐
-        │ login (Telegram)    │ ─────────────► │ /api/*  (per-user, JWT)  │
-        │ overview / tx /     │ ◄───────────── │ /api/auth/telegram       │
-        │ analytics / cats    │                │ Telegram bot (webhook)   │
-        └─────────────────────┘                └───────────┬──────────────┘
+        │ login / overview /  │ ─────────────► │ /api/*  (per-user, JWT)  │
+        │ tx / analytics /    │ ◄───────────── │ /api/auth/* (bot-link,   │
+        │ categories / budgets│                │   Telegram widget, demo) │
+        └─────────────────────┘                │ Telegram bot (webhook)   │
+                                                └───────────┬──────────────┘
                                                             │
 Telegram (text/voice) ──► Groq Whisper large-v3 ─► Groq Llama 3.3 ─► │
                           (or local faster-whisper + rule parser)   │
@@ -60,7 +71,7 @@ ACKs immediately and processes in the background, all reports aggregate in SQL
 
 | Layer | Tech | Deploy |
 |-------|------|--------|
-| Frontend | Static HTML + Tailwind (CDN) + Chart.js + vanilla JS | **Vercel** |
+| Frontend | Static HTML + Tailwind (CDN) + Chart.js + vanilla JS + custom i18n | **Vercel** |
 | Backend | FastAPI, aiogram 3, SQLAlchemy 2 (async), PyJWT | **Render** |
 | Database | PostgreSQL | **Supabase** |
 | AI (primary, free) | Groq — Whisper large-v3 (voice) + Llama 3.3 70B (parsing) | set `GROQ_API_KEY` |
@@ -76,11 +87,12 @@ app/                     BACKEND (FastAPI)
   services/              transactions, categories, analytics, budgets, users
   ai/                    extract (dispatcher), groq_extract (primary), rule_extract (offline
                          fallback), transcribe (Groq/local), openai_* (optional)
-  bot/                   pipeline (intent logic), handlers, instance
-  web/                   api.py (JSON), auth.py, auth_routes.py
+  bot/                   pipeline (intent logic), handlers (incl. /login), instance
+  web/                   api.py (JSON + budgets), auth.py, auth_routes.py (telegram/bot-link/demo)
 frontend/                FRONTEND (static, deploy to Vercel)
-  index.html             login (Telegram widget + dev-login)
-  overview/transactions/analytics/categories.html
+  index.html             login (bot-link + Telegram widget + dev-login)
+  overview / transactions / analytics / categories / budgets .html
+  i18n.js                translations (uz/ru/en) + dark/light theme
   app.js  config.js  styles.css
 scripts/seed_demo.py     demo data (no keys needed)
 render.yaml  runtime.txt docker-compose.yml
@@ -123,6 +135,8 @@ Open http://localhost:5500 → use **dev-login** (id = 1) to see the demo data.
    fully offline via the rule-based parser + local `faster-whisper`.
 4. Restart the backend. The bot starts in **long-polling** mode (no public
    URL needed). Message it: “Bugun sotuvdan 2 mln keldi”, or send a voice note.
+5. Set `DASHBOARD_URL=http://localhost:5500` so the bot's `/login` command
+   builds working links locally.
 
 > Without `GROQ_API_KEY`, the first voice message downloads the local
 > `faster-whisper` model once (a few seconds).
@@ -144,8 +158,13 @@ Set: `DATABASE_URL` (Supabase, above), `TELEGRAM_BOT_TOKEN`, `GROQ_API_KEY`
 (free, from [console.groq.com](https://console.groq.com/keys)),
 `TELEGRAM_WEBHOOK_SECRET` (random string), `WEBHOOK_BASE_URL` (this service's
 own URL, e.g. `https://pultrack-api.onrender.com`), `CORS_ORIGINS` (your Vercel
-URL, comma-separated if you have both the custom and auto-generated domain).
+URL, comma-separated if you have both the custom and auto-generated domain),
+`DASHBOARD_URL` (your Vercel URL — used to build the bot's `/login` links).
 On startup the app auto-registers the Telegram webhook at `WEBHOOK_BASE_URL`.
+
+> If Render is connected as a "Public Git Repository" (not the GitHub App),
+> it does **not** auto-deploy on push — trigger **Manual Deploy → Deploy
+> latest commit** yourself after each push.
 
 **3. Frontend — Vercel**
 Import the repo → set **Root Directory** to `frontend` → no build command
@@ -153,11 +172,10 @@ needed (static files) → Deploy. Then edit `frontend/config.js`:
 `PULTRACK_API` = your Render URL, `PULTRACK_BOT_USERNAME` = your bot's
 username → commit + push (Vercel redeploys automatically).
 
-**4. Telegram Login Widget**
+**4. Telegram Login Widget (optional — `/login` above is the reliable path)**
 In @BotFather: `/mybots` → your bot → **Bot Settings** → **Domain** →
 **Set domain** → type your Vercel domain (e.g. `pul-track.vercel.app`) as a
-plain chat message. Reviewers can then log in with their own Telegram account
-and see only their own data.
+plain chat message.
 
 ---
 
@@ -165,6 +183,8 @@ and see only their own data.
 
 | You say | Bot does |
 |---------|----------|
+| /start | full onboarding guide + menu buttons |
+| /login | sends a one-click dashboard sign-in link |
 | "Bugun sotuvdan 2 mln keldi" | logs income 2,000,000 · Sotuv |
 | "Logistikaga 500 ming xarajat" | logs expense 500,000 · Logistika |
 | 🎤 voice note | transcribes (Groq Whisper large-v3, or local fallback), then logs |
@@ -179,21 +199,25 @@ and see only their own data.
 
 ## Product brief
 
-PulTrack lets a busy Uzbek business owner record every som of income and
-expense the fastest way possible — by texting or speaking to a Telegram bot in
-Uzbek or Russian. Voice is transcribed and understood by free AI (Groq), intent
-and amounts are parsed ("2 mln" → 2,000,000), and every entry is confirmed, with a follow-up whenever
-something is unclear so nothing is lost. A separate web dashboard, secured by
-Telegram login, turns that stream into a live picture per business: income vs
-expense, category breakdowns, monthly trends, and budget alerts. It runs
-entirely on free tiers, replacing messy Excel/paper bookkeeping with a
-two-minute daily habit.
+PulTrack helps a small business owner in Uzbekistan track money the easy way.
+The owner just texts or talks to a Telegram bot — in Uzbek or Russian — to log
+sales and costs. Free AI reads the voice message and understands the amount
+("2 mln" means 2,000,000) and the category. The bot always confirms what it
+saved, and asks a question if something is unclear, so nothing gets lost. A
+web dashboard shows the same data as clear charts and tables: income,
+expenses, trends, and budget alerts. The dashboard works in three languages
+and has a dark mode. Everything runs on free hosting, so it costs nothing to
+run. It replaces messy Excel sheets or paper notebooks with a two-minute daily
+habit.
 
 ## What I'd add in 3 more days
 
-Team workspaces (invite staff to one business with roles), richer reports
-(natural-language summaries like "logistics up 32% vs last month", CSV/PDF
-export, recurring-transaction detection), a large-amount confirmation step and
-an edit audit log for the bot, proactive push notifications (weekly digest,
-budget warnings), Redis-cached dashboard aggregates for instant loads, and a
-labeled test set to measure and improve extraction accuracy.
+First, I would let a business invite team members, so more than one person can
+log transactions for the same company. Second, I would make reports smarter:
+plain-language summaries like "logistics costs went up 32% this month," plus
+CSV/PDF export and automatic detection of repeating payments (like rent).
+Third, I would add a safety check before saving very large amounts, and a
+history log so you can see every edit. Fourth, I would make the bot send
+weekly summaries and budget warnings on its own, without being asked. Finally,
+I would build a test set of real messages to measure and improve how well the
+AI understands Uzbek and Russian voice notes over time.
