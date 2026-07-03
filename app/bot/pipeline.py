@@ -108,8 +108,7 @@ async def _log_transaction(
         f"✅ {kind} qayd etildi\n\n"
         f"💵 Summa: {fmt_money(float(tx.amount))}\n"
         f"🏷 {label}: {what}\n"
-        f"🗓 Sana: {when}\n\n"
-        f"↩️ Tuzatish uchun «oxirgisini o'chir» deb yozing."
+        f"🗓 Sana: {when}"
     )
 
 
