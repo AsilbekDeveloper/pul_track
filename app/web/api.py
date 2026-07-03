@@ -187,6 +187,19 @@ async def list_budgets(
     return await budgets.budget_status(session, user.id, month)
 
 
+@router.delete("/budgets/{budget_id}")
+async def delete_budget(
+    budget_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    ok = await budgets.delete_budget(session, user.id, budget_id)
+    if not ok:
+        raise HTTPException(404, "Topilmadi")
+    await session.commit()
+    return {"ok": True}
+
+
 # ---- Analytics (chart feeds) ----
 
 @router.get("/analytics/trend")

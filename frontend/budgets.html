@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PulTrack — Byudjet</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div class="flex min-h-screen">
+    <div id="sidebar-slot"></div>
+    <main class="flex-1 min-w-0">
+      <header class="h-14 border-b border-slate-200 bg-white flex items-center justify-between px-6">
+        <h1 class="text-base font-semibold text-slate-800">Byudjet</h1>
+        <button id="btn-refresh" title="Yangilash" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700">🔄</button>
+      </header>
+      <div class="p-6 max-w-4xl">
+        <div class="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+          <h2 class="font-semibold text-slate-800 mb-4">Yangi byudjet belgilash</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+            <div>
+              <label class="text-xs text-slate-500">Oy</label>
+              <input id="b-month" type="month" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+            </div>
+            <div>
+              <label class="text-xs text-slate-500">Kategoriya</label>
+              <select id="b-category" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+                <option value="">Umumiy (barcha xarajat)</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-slate-500">Limit (so'm)</label>
+              <input id="b-limit" type="number" placeholder="masalan 2000000" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+            </div>
+            <button id="b-submit" class="py-2 rounded-lg bg-slate-900 text-white text-sm font-medium">Saqlash</button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <h2 class="font-semibold text-slate-800 mb-4">Joriy oy byudjetlari</h2>
+          <div id="list" class="space-y-4"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div id="toast" class="fixed bottom-5 right-5 hidden px-4 py-2 rounded-lg bg-slate-900 text-white text-sm shadow-lg"></div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    function currentMonth() { return new Date().toISOString().slice(0, 7); }
+
+    function barColor(pct, over) {
+      if (over) return "bg-rose-600";
+      if (pct >= 90) return "bg-amber-500";
+      return "bg-emerald-600";
+    }
+
+    function budgetRow(b) {
+      const pct = Math.min(b.pct, 100);
+      return `
+        <div class="border border-slate-100 rounded-lg p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-slate-800">${b.category}</span>
+            <div class="flex items-center gap-3">
+              <span class="text-sm text-slate-500">${fmtMoney(b.spent)} / ${fmtMoney(b.limit)} (${b.pct}%)</span>
+              <button class="text-slate-400 hover:text-rose-600 text-sm" data-del="${b.budget_id}">🗑</button>
+            </div>
+          </div>
+          <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div class="h-full ${barColor(b.pct, b.over)}" style="width:${pct}%"></div>
+          </div>
+          ${b.alert ? `<div class="text-xs mt-1 ${b.over ? 'text-rose-600' : 'text-amber-600'}">
+            ${b.over ? '⚠️ Limitdan oshdi' : '⚠️ Limitga yaqinlashmoqda'}</div>` : ""}
+        </div>`;
+    }
+
+    async function loadCategories() {
+      const cats = (await apiGet("/api/categories?type=expense")) || [];
+      const sel = document.getElementById("b-category");
+      sel.innerHTML = `<option value="">Umumiy (barcha xarajat)</option>` +
+        cats.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
+    }
+
+    async function load() {
+      const month = document.getElementById("b-month").value || currentMonth();
+      const list = (await apiGet("/api/budgets?month=" + month)) || [];
+      document.getElementById("list").innerHTML = list.length
+        ? list.map(budgetRow).join("")
+        : '<div class="text-sm text-slate-400 py-8 text-center">Bu oy uchun byudjet belgilanmagan</div>';
+      document.querySelectorAll("[data-del]").forEach(btn => btn.onclick = async () => {
+        if (!confirm("Byudjet o'chirilsinmi?")) return;
+        if (await apiDelete("/api/budgets/" + btn.dataset.del)) { toast("O'chirildi 🗑"); load(); }
+      });
+    }
+
+    document.getElementById("b-submit").onclick = async () => {
+      const limit = Number(document.getElementById("b-limit").value);
+      if (!limit || limit <= 0) return toast("Limitni kiriting");
+      const cid = document.getElementById("b-category").value;
+      const month = document.getElementById("b-month").value || currentMonth();
+      const ok = await apiPost("/api/budgets", {
+        month, limit_amount: limit,
+        category_id: cid ? Number(cid) : null,
+      });
+      if (ok) {
+        toast("Saqlandi ✅");
+        document.getElementById("b-limit").value = "";
+        load();
+      }
+    };
+
+    document.getElementById("b-month").onchange = load;
+    document.getElementById("btn-refresh").onclick = () =>
+      withSpin(document.getElementById("btn-refresh"), load);
+
+    if (requireAuth()) {
+      renderNav("budgets");
+      document.getElementById("b-month").value = currentMonth();
+      loadCategories();
+      load();
+    }
+  </script>
+</body>
+</html>

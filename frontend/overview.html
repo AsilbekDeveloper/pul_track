@@ -11,8 +11,9 @@
   <div class="flex min-h-screen">
     <div id="sidebar-slot"></div>
     <main class="flex-1 min-w-0">
-      <header class="h-14 border-b border-slate-200 bg-white flex items-center px-6">
+      <header class="h-14 border-b border-slate-200 bg-white flex items-center justify-between px-6">
         <h1 class="text-base font-semibold text-slate-800">Umumiy ko'rinish</h1>
+        <button id="btn-refresh" title="Yangilash" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700">🔄</button>
       </header>
       <div class="p-6 max-w-6xl">
         <div id="alerts" class="mb-5 space-y-2"></div>
@@ -130,7 +131,13 @@
         document.getElementById("q-amount").value = ""; document.getElementById("q-note").value = ""; }
     };
 
-    if (requireAuth()) { renderNav("overview"); setType("expense"); load(); }
+    document.getElementById("btn-refresh").onclick = () =>
+      withSpin(document.getElementById("btn-refresh"), load);
+
+    if (requireAuth()) {
+      renderNav("overview"); setType("expense"); load();
+      autoRefresh(load, 20000); // picks up transactions logged via the bot
+    }
   </script>
 </body>
 </html>

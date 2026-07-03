@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from datetime import date
 
+from sqlalchemy import delete as sa_delete
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -96,3 +97,10 @@ async def upsert_budget(
         session.add(budget)
     await session.flush()
     return budget
+
+
+async def delete_budget(session: AsyncSession, user_id: int, budget_id: int) -> bool:
+    result = await session.execute(
+        sa_delete(Budget).where(Budget.id == budget_id, Budget.user_id == user_id)
+    )
+    return result.rowcount > 0
