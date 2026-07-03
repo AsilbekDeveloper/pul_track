@@ -16,18 +16,18 @@
   <div class="flex min-h-screen">
     <div id="sidebar-slot"></div>
     <main class="flex-1 min-w-0">
-      <header class="h-14 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-between px-6 transition-colors">
+      <header class="h-14 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-between px-4 md:px-6 transition-colors">
         <h1 class="text-base font-semibold text-slate-800 dark:text-white" data-i18n="an_title"></h1>
         <button id="btn-refresh" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700" data-i18n-title="common_refresh">🔄</button>
       </header>
-      <div class="p-6 max-w-6xl">
+      <div class="p-4 md:p-6 max-w-6xl">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 lg:col-span-2 transition-colors">
+          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 lg:col-span-2 transition-colors overflow-x-auto">
             <h2 class="font-semibold text-slate-800 dark:text-white mb-4" data-i18n="an_trend"></h2>
-            <canvas id="trendChart" height="90"></canvas>
+            <div class="min-w-[480px]"><canvas id="trendChart" height="90"></canvas></div>
           </div>
           <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 transition-colors">
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
               <h2 class="font-semibold text-slate-800 dark:text-white" data-i18n="an_by_category"></h2>
               <div class="flex gap-2">
                 <select id="catType" class="px-2 py-1 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm">
