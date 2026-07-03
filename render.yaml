@@ -1,0 +1,28 @@
+# Render.com backend deploy (free plan). Create a Blueprint from this repo.
+services:
+  - type: web
+    name: pultrack-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: AI_PROVIDER
+        value: local
+      - key: WHISPER_MODEL
+        value: tiny          # low RAM on free plan; use "base" on bigger hosts
+      - key: SECRET_KEY
+        generateValue: true  # Render generates a strong random value
+      - key: DATABASE_URL
+        sync: false          # paste your Supabase connection string (postgresql+asyncpg://...)
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        sync: false          # any random string
+      - key: WEBHOOK_BASE_URL
+        sync: false          # https://pultrack-api.onrender.com  (this service's URL)
+      - key: CORS_ORIGINS
+        sync: false          # your Vercel URL, e.g. https://pultrack.vercel.app

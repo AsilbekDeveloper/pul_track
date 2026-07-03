@@ -1,0 +1,31 @@
+# --- Web / ASGI ---
+fastapi>=0.115,<0.116
+uvicorn[standard]>=0.30        # includes uvloop (posix) + httptools for speed
+jinja2>=3.1
+python-multipart>=0.0.9
+
+# --- Telegram bot ---
+aiogram>=3.13,<3.16
+
+# --- AI ---
+faster-whisper>=1.0        # FREE local voice->text (no API key)
+openai>=1.50               # OPTIONAL: only if AI_PROVIDER=openai
+
+# --- Auth ---
+PyJWT>=2.9
+
+# --- Database (async) ---
+sqlalchemy[asyncio]>=2.0.30
+asyncpg>=0.29                  # fastest PostgreSQL driver for Python
+alembic>=1.13
+
+# --- Config / validation ---
+pydantic>=2.7,<2.10           # <2.10 keeps aiogram 3.15 happy
+pydantic-settings>=2.4
+
+# --- Cache / state (optional, graceful fallback) ---
+redis>=5.0
+
+# --- Utils ---
+httpx>=0.27
+python-dotenv>=1.0

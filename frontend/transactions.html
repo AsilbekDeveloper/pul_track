@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PulTrack — Tranzaksiyalar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div class="flex min-h-screen">
+    <div id="sidebar-slot"></div>
+    <main class="flex-1 min-w-0">
+      <header class="h-14 border-b border-slate-200 bg-white flex items-center px-6">
+        <h1 class="text-base font-semibold text-slate-800">Tranzaksiyalar</h1>
+      </header>
+      <div class="p-6 max-w-6xl">
+        <div class="bg-white rounded-xl border border-slate-200 p-4 mb-5 grid grid-cols-2 md:grid-cols-6 gap-3 items-end">
+          <div class="col-span-2">
+            <label class="text-xs text-slate-500">Qidiruv</label>
+            <input id="f-search" placeholder="Izoh yoki kategoriya" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">Turi</label>
+            <select id="f-type" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+              <option value="">Barchasi</option><option value="income">Daromad</option><option value="expense">Xarajat</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">Kategoriya</label>
+            <select id="f-category" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"><option value="">Barchasi</option></select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">Dan</label>
+            <input id="f-start" type="date" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">Gacha</label>
+            <input id="f-end" type="date" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+          </div>
+          <div class="col-span-2 md:col-span-6 flex gap-2">
+            <button id="f-apply" class="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-medium">Filtrlash</button>
+            <button id="f-clear" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-600 text-sm font-medium">Tozalash</button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-slate-500 text-xs uppercase">
+              <tr>
+                <th class="text-left px-4 py-3">Sana</th><th class="text-left px-4 py-3">Turi</th>
+                <th class="text-left px-4 py-3">Kategoriya</th><th class="text-left px-4 py-3">Izoh</th>
+                <th class="text-right px-4 py-3">Summa</th><th class="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody id="rows" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div id="toast" class="fixed bottom-5 right-5 hidden px-4 py-2 rounded-lg bg-slate-900 text-white text-sm shadow-lg"></div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    let cats = [];
+
+    function catOptions(selectedId, type) {
+      return cats.filter(c => !type || c.type === type)
+        .map(c => `<option value="${c.id}" ${c.id === selectedId ? "selected" : ""}>${c.name}</option>`).join("");
+    }
+
+    function viewRow(t) {
+      const tr = document.createElement("tr");
+      tr.className = "hover:bg-slate-50";
+      tr.innerHTML = `
+        <td class="px-4 py-3 whitespace-nowrap">${t.occurred_at.split('-').reverse().join('.')}</td>
+        <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-full text-xs font-medium ${t.type==='income'?'bg-emerald-50 text-emerald-700':'bg-rose-50 text-rose-700'}">${t.type==='income'?'Daromad':'Xarajat'}</span></td>
+        <td class="px-4 py-3">${t.category || '—'}</td>
+        <td class="px-4 py-3 text-slate-500">${t.note || '—'}</td>
+        <td class="px-4 py-3 text-right font-semibold ${t.type==='income'?'text-emerald-600':'text-rose-600'}">${fmtMoney(t.amount)}</td>
+        <td class="px-4 py-3 text-right whitespace-nowrap">
+          <button class="text-slate-400 hover:text-slate-700 px-1 btn-edit">✎</button>
+          <button class="text-slate-400 hover:text-rose-600 px-1 btn-del">🗑</button>
+        </td>`;
+      tr.querySelector(".btn-edit").onclick = () => tr.replaceWith(editRow(t));
+      tr.querySelector(".btn-del").onclick = async () => {
+        if (!confirm("O'chirilsinmi?")) return;
+        if (await apiDelete("/api/transactions/" + t.id)) { toast("O'chirildi 🗑"); load(); }
+      };
+      return tr;
+    }
+
+    function editRow(t) {
+      const tr = document.createElement("tr");
+      tr.className = "bg-slate-50";
+      tr.innerHTML = `
+        <td class="px-4 py-3"><input type="date" value="${t.occurred_at}" class="e-date px-2 py-1 border rounded text-xs"></td>
+        <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-full text-xs font-medium ${t.type==='income'?'bg-emerald-50 text-emerald-700':'bg-rose-50 text-rose-700'}">${t.type==='income'?'Daromad':'Xarajat'}</span></td>
+        <td class="px-4 py-3"><select class="e-cat px-2 py-1 border rounded text-xs"><option value="">—</option>${catOptions(t.category_id, t.type)}</select></td>
+        <td class="px-4 py-3"><input type="text" value="${t.note || ''}" class="e-note px-2 py-1 border rounded text-xs w-full"></td>
+        <td class="px-4 py-3 text-right"><input type="number" value="${t.amount}" class="e-amount px-2 py-1 border rounded text-xs w-28 text-right"></td>
+        <td class="px-4 py-3 text-right whitespace-nowrap">
+          <button class="text-emerald-600 px-1 btn-save">✔</button>
+          <button class="text-slate-400 px-1 btn-cancel">✕</button>
+        </td>`;
+      tr.querySelector(".btn-cancel").onclick = () => tr.replaceWith(viewRow(t));
+      tr.querySelector(".btn-save").onclick = async () => {
+        const cid = tr.querySelector(".e-cat").value;
+        const ok = await apiPatch("/api/transactions/" + t.id, {
+          amount: Number(tr.querySelector(".e-amount").value),
+          occurred_at: tr.querySelector(".e-date").value,
+          note: tr.querySelector(".e-note").value || null,
+          category_id: cid ? Number(cid) : null,
+        });
+        if (ok) { toast("Saqlandi ✅"); load(); }
+      };
+      return tr;
+    }
+
+    async function load() {
+      const p = new URLSearchParams();
+      const s = document.getElementById("f-search").value; if (s) p.set("search", s);
+      const ty = document.getElementById("f-type").value; if (ty) p.set("type", ty);
+      const c = document.getElementById("f-category").value; if (c) p.set("category_id", c);
+      const st = document.getElementById("f-start").value; if (st) p.set("start", st);
+      const en = document.getElementById("f-end").value; if (en) p.set("end", en);
+      const txs = (await apiGet("/api/transactions?" + p.toString())) || [];
+      const body = document.getElementById("rows");
+      body.innerHTML = "";
+      if (!txs.length) { body.innerHTML = `<tr><td colspan="6" class="px-4 py-10 text-center text-slate-400">Tranzaksiya topilmadi</td></tr>`; return; }
+      txs.forEach(t => body.appendChild(viewRow(t)));
+    }
+
+    async function init() {
+      cats = (await apiGet("/api/categories")) || [];
+      document.getElementById("f-category").innerHTML =
+        `<option value="">Barchasi</option>` + cats.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
+      document.getElementById("f-apply").onclick = load;
+      document.getElementById("f-clear").onclick = () => {
+        ["f-search","f-type","f-category","f-start","f-end"].forEach(id => document.getElementById(id).value = "");
+        load();
+      };
+      load();
+    }
+
+    if (requireAuth()) { renderNav("transactions"); init(); }
+  </script>
+</body>
+</html>

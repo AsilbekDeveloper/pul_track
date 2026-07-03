@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PulTrack — Kategoriyalar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div class="flex min-h-screen">
+    <div id="sidebar-slot"></div>
+    <main class="flex-1 min-w-0">
+      <header class="h-14 border-b border-slate-200 bg-white flex items-center px-6">
+        <h1 class="text-base font-semibold text-slate-800">Kategoriyalar</h1>
+      </header>
+      <div class="p-6 max-w-6xl">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-white rounded-xl border border-slate-200 p-5">
+            <h2 class="font-semibold text-emerald-700 mb-4">Daromad kategoriyalari</h2>
+            <div class="flex gap-2 mb-4">
+              <input id="new-income" type="text" placeholder="Yangi kategoriya" class="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm">
+              <button data-add="income" class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium">+</button>
+            </div>
+            <div id="list-income" class="space-y-1"></div>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 p-5">
+            <h2 class="font-semibold text-rose-700 mb-4">Xarajat kategoriyalari</h2>
+            <div class="flex gap-2 mb-4">
+              <input id="new-expense" type="text" placeholder="Yangi kategoriya" class="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm">
+              <button data-add="expense" class="px-4 py-2 rounded-lg bg-rose-600 text-white text-sm font-medium">+</button>
+            </div>
+            <div id="list-expense" class="space-y-1"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div id="toast" class="fixed bottom-5 right-5 hidden px-4 py-2 rounded-lg bg-slate-900 text-white text-sm shadow-lg"></div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    function row(c) {
+      return `<div class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50">
+        <span class="text-sm">${c.name}${c.is_custom ? '' : '<span class="ml-2 text-xs text-slate-400">standart</span>'}</span>
+        <button class="text-slate-400 hover:text-rose-600 text-sm" data-del="${c.id}">🗑</button></div>`;
+    }
+
+    async function load() {
+      const cats = (await apiGet("/api/categories")) || [];
+      const inc = cats.filter(c => c.type === "income");
+      const exp = cats.filter(c => c.type === "expense");
+      document.getElementById("list-income").innerHTML = inc.map(row).join("") || '<div class="text-sm text-slate-400 py-4 text-center">Yo\'q</div>';
+      document.getElementById("list-expense").innerHTML = exp.map(row).join("") || '<div class="text-sm text-slate-400 py-4 text-center">Yo\'q</div>';
+      document.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
+        if (!confirm("O'chirilsinmi?")) return;
+        if (await apiDelete("/api/categories/" + b.dataset.del)) { toast("O'chirildi 🗑"); load(); }
+      });
+    }
+
+    document.querySelectorAll("[data-add]").forEach(b => b.onclick = async () => {
+      const type = b.dataset.add;
+      const input = document.getElementById("new-" + type);
+      const name = input.value.trim();
+      if (!name) return toast("Nom kiriting");
+      if (await apiPost("/api/categories", { name, type })) { input.value = ""; toast("Qo'shildi ✅"); load(); }
+    });
+
+    if (requireAuth()) { renderNav("categories"); load(); }
+  </script>
+</body>
+</html>

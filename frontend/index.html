@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PulTrack — Kirish</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <div class="text-center mb-6">
+      <div class="text-3xl font-bold text-slate-900">Pul<span class="text-emerald-600">Track</span></div>
+      <div class="text-sm text-slate-500 mt-1">Biznes moliya boshqaruvi</div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200 p-8 text-center">
+      <div class="text-4xl mb-3">💼</div>
+      <h1 class="text-lg font-semibold text-slate-900">Dashboard'ga kiring</h1>
+      <p class="text-sm text-slate-500 mt-1 mb-6">
+        Telegram akkountingiz bilan kiring — faqat o'z ma'lumotlaringizni ko'rasiz.
+      </p>
+
+      <!-- Telegram Login Widget mounts here -->
+      <div id="tg-login" class="flex justify-center"></div>
+
+      <!-- Dev login (localhost only) -->
+      <div id="dev-login" class="hidden mt-6 pt-6 border-t border-slate-100">
+        <div class="text-xs text-slate-400 mb-2">Lokal test (dev-login)</div>
+        <div class="flex gap-2">
+          <input id="dev-id" type="number" value="1" class="w-24 px-3 py-2 border border-slate-200 rounded-lg text-sm" placeholder="TG id">
+          <button onclick="devLogin()" class="flex-1 py-2 rounded-lg bg-slate-900 text-white text-sm font-medium">Kirish</button>
+        </div>
+        <div class="text-xs text-slate-400 mt-2">Demo ma'lumot uchun id = 1</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed bottom-5 right-5 hidden px-4 py-2 rounded-lg bg-slate-900 text-white text-sm shadow-lg"></div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    // If already logged in, go straight to the dashboard.
+    if (getToken()) location.href = "overview.html";
+
+    // Telegram Login Widget — called by Telegram after auth.
+    window.onTelegramAuth = async (user) => {
+      const data = await apiPost("/api/auth/telegram", user);
+      if (data && data.access_token) { setToken(data.access_token); location.href = "overview.html"; }
+    };
+
+    // Mount the widget (needs a real bot username + domain set via BotFather).
+    (function mountWidget() {
+      const uname = window.PULTRACK_BOT_USERNAME;
+      if (uname && uname !== "your_bot_username") {
+        const s = document.createElement("script");
+        s.async = true;
+        s.src = "https://telegram.org/js/telegram-widget.js?22";
+        s.setAttribute("data-telegram-login", uname);
+        s.setAttribute("data-size", "large");
+        s.setAttribute("data-radius", "10");
+        s.setAttribute("data-onauth", "onTelegramAuth(user)");
+        s.setAttribute("data-request-access", "write");
+        document.getElementById("tg-login").appendChild(s);
+      } else {
+        document.getElementById("tg-login").innerHTML =
+          '<div class="text-xs text-amber-600">Bot username config.js da sozlanmagan</div>';
+      }
+    })();
+
+    // Show dev-login only on localhost.
+    if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+      document.getElementById("dev-login").classList.remove("hidden");
+    }
+
+    async function devLogin() {
+      const id = Number(document.getElementById("dev-id").value || 1);
+      const data = await apiPost("/api/auth/dev-login", { telegram_user_id: id, name: "Demo Biznes" });
+      if (data && data.access_token) { setToken(data.access_token); location.href = "overview.html"; }
+    }
+    window.devLogin = devLogin;
+  </script>
+</body>
+</html>

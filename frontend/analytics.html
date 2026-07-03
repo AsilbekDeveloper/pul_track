@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PulTrack — Analitika</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div class="flex min-h-screen">
+    <div id="sidebar-slot"></div>
+    <main class="flex-1 min-w-0">
+      <header class="h-14 border-b border-slate-200 bg-white flex items-center px-6">
+        <h1 class="text-base font-semibold text-slate-800">Analitika</h1>
+      </header>
+      <div class="p-6 max-w-6xl">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white rounded-xl border border-slate-200 p-5 lg:col-span-2">
+            <h2 class="font-semibold text-slate-800 mb-4">Daromad vs Xarajat (oxirgi 6 oy)</h2>
+            <canvas id="trendChart" height="90"></canvas>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 p-5">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="font-semibold text-slate-800">Kategoriyalar bo'yicha</h2>
+              <div class="flex gap-2">
+                <select id="catType" class="px-2 py-1 border border-slate-200 rounded-lg text-sm">
+                  <option value="expense">Xarajat</option><option value="income">Daromad</option>
+                </select>
+                <select id="catPeriod" class="px-2 py-1 border border-slate-200 rounded-lg text-sm">
+                  <option value="this_month">Bu oy</option><option value="last_month">O'tgan oy</option>
+                  <option value="this_year">Bu yil</option><option value="all">Umumiy</option>
+                </select>
+              </div>
+            </div>
+            <canvas id="catChart" height="220"></canvas>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 p-5">
+            <h2 class="font-semibold text-slate-800 mb-4">Taqsimot jadvali</h2>
+            <div id="catTable" class="divide-y divide-slate-100 text-sm"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div id="toast" class="fixed bottom-5 right-5 hidden px-4 py-2 rounded-lg bg-slate-900 text-white text-sm shadow-lg"></div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    const PALETTE = ['#059669','#e11d48','#2563eb','#d97706','#7c3aed','#0891b2','#65a30d','#db2777','#475569','#ca8a04'];
+    let trendChart, catChart;
+
+    async function loadTrend() {
+      const data = (await apiGet("/api/analytics/trend?months=6")) || [];
+      trendChart && trendChart.destroy();
+      trendChart = new Chart(document.getElementById("trendChart"), {
+        type: "bar",
+        data: { labels: data.map(d => d.month), datasets: [
+          { label: "Daromad", data: data.map(d => d.income), backgroundColor: "#059669", borderRadius: 4 },
+          { label: "Xarajat", data: data.map(d => d.expense), backgroundColor: "#e11d48", borderRadius: 4 },
+        ]},
+        options: { responsive: true, plugins: { legend: { position: "bottom" } },
+          scales: { y: { ticks: { callback: v => (v / 1e6) + "M" } } } }
+      });
+    }
+
+    async function loadCategory() {
+      const type = document.getElementById("catType").value;
+      const period = document.getElementById("catPeriod").value;
+      const data = (await apiGet(`/api/analytics/by-category?type=${type}&period=${period}`)) || [];
+      const values = data.map(d => d.total);
+      catChart && catChart.destroy();
+      catChart = new Chart(document.getElementById("catChart"), {
+        type: "doughnut",
+        data: { labels: data.map(d => d.name), datasets: [{ data: values, backgroundColor: PALETTE }] },
+        options: { responsive: true, plugins: { legend: { position: "bottom" } } }
+      });
+      const total = values.reduce((a, b) => a + b, 0) || 1;
+      document.getElementById("catTable").innerHTML = data.length
+        ? data.map((d, i) => `<div class="flex items-center justify-between py-2">
+            <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background:${PALETTE[i % PALETTE.length]}"></span>${d.name}</span>
+            <span class="text-slate-600">${fmtMoney(d.total)} <span class="text-slate-400">(${Math.round(d.total / total * 100)}%)</span></span></div>`).join("")
+        : '<div class="py-8 text-center text-slate-400">Ma\'lumot yo\'q</div>';
+    }
+
+    document.getElementById("catType").onchange = loadCategory;
+    document.getElementById("catPeriod").onchange = loadCategory;
+
+    if (requireAuth()) { renderNav("analytics"); loadTrend(); loadCategory(); }
+  </script>
+</body>
+</html>
