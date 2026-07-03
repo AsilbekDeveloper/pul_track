@@ -41,6 +41,18 @@
   <script src="config.js"></script>
   <script src="app.js"></script>
   <script>
+    // Bot-issued login link (?bot_token=...) — sent by the bot's /login
+    // command. Bypasses the Telegram Login Widget entirely; the token is
+    // already a valid signed JWT from our backend, so we use it directly.
+    (function loginFromBotLink() {
+      const p = new URLSearchParams(location.search);
+      const botToken = p.get("bot_token");
+      if (botToken) {
+        setToken(botToken);
+        location.href = "overview.html";
+      }
+    })();
+
     // If already logged in, go straight to the dashboard.
     if (getToken()) location.href = "overview.html";
 

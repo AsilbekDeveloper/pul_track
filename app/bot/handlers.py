@@ -10,8 +10,10 @@ from aiogram.types import Message
 
 from app.ai.transcribe import transcribe
 from app.bot.pipeline import handle_message
+from app.config import settings
 from app.db import session_scope
 from app.models import TxSource, TxType
+from app.security import create_access_token
 from app.services import categories as cat_service
 from app.services.users import get_or_create_user
 
@@ -25,7 +27,7 @@ WELCOME = (
     "• «Logistikaga 500 ming xarajat»\n"
     "• «Bu oy marketingga qancha ketdi?»\n\n"
     "Tuzatish: «oxirgisini o'chir» yoki to'g'ri summani yozing.\n"
-    "Buyruqlar: /categories, /help"
+    "Buyruqlar: /categories, /login (dashboard), /help"
 )
 
 
@@ -53,6 +55,27 @@ async def on_start(message: Message) -> None:
 @router.message(Command("help"))
 async def on_help(message: Message) -> None:
     await message.answer(WELCOME)
+
+
+@router.message(Command("login"))
+async def on_login(message: Message) -> None:
+    """Send a direct, one-click dashboard sign-in link for this user.
+
+    Bypasses the Telegram Login Widget's oauth.telegram.org confirmation
+    flow entirely — it goes through our own bot (proven reliable) instead.
+    """
+    async with session_scope() as session:
+        user = await get_or_create_user(
+            session, message.from_user.id, message.from_user.full_name
+        )
+        await session.commit()
+    token = create_access_token(user.id, user.telegram_user_id)
+    link = f"{settings.dashboard_url.rstrip('/')}/index.html?bot_token={token}"
+    await message.answer(
+        "🔐 Dashboard'ga kirish uchun havola (faqat sizga tegishli):\n"
+        f"{link}\n\n"
+        "Havola 7 kun amal qiladi."
+    )
 
 
 @router.message(Command("categories"))

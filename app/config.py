@@ -60,6 +60,11 @@ class Settings(BaseSettings):
     # Telegram Login Widget is fully verified. Empty = disabled.
     demo_access_key: str = ""
 
+    # Dashboard base URL, used by the bot's /login command to send a direct
+    # sign-in link (bypasses the Telegram Login Widget's oauth.telegram.org
+    # confirmation-message delivery, which can be unreliable in some regions).
+    dashboard_url: str = "http://localhost:5500"
+
     @field_validator("dashboard_user_id", "redis_url", mode="before")
     @classmethod
     def _blank_to_none(cls, v):
