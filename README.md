@@ -6,13 +6,29 @@ then track everything on a **multi-page web dashboard**.
 
 > Built for the data365 agency assessment (Task 01).
 
+## 🔴 Live demo
+
+| | |
+|---|---|
+| **Telegram bot** | [@pul_track_finance_bot](https://t.me/pul_track_finance_bot) |
+| **Dashboard** | https://pul-track.vercel.app |
+| **Backend API** | https://pultrack-api.onrender.com (`/docs` for OpenAPI) |
+
+> ⚠️ Backend runs on Render's **free tier**: it spins down after 15 minutes of
+> inactivity, so the *first* request after a while can take 30–50s to wake up.
+> Message the bot once first to warm it up before opening the dashboard.
+
 - **Telegram bot** — text + voice, automatic transcription, intent detection,
   natural confirmations, follow-up questions, reports, corrections, custom
-  categories. Never fails silently.
+  categories. Never fails silently, even with garbled voice transcription.
 - **Web dashboard** — Overview, Transactions, Analytics, Categories,
-  Onboarding + Telegram login, and monthly **Budget Alerts** (extra feature).
-- **100% free to run** — local rule-based parser + local `faster-whisper` for
-  voice. No OpenAI key required (OpenAI is optional).
+  Onboarding + Telegram login (each user sees only their own data), and
+  monthly **Budget Alerts** (extra feature).
+- **Free-tier AI** — Groq (free API) runs both voice transcription
+  (Whisper large-v3) and message understanding (Llama 3.3 70B), so parsing is
+  robust even against messy transcriptions. Falls back to a fully offline
+  rule-based parser + local `faster-whisper` if no Groq key is set — so the
+  whole project can run with **zero API costs**.
 
 ---
 
@@ -30,7 +46,8 @@ to the bot appears on the dashboard immediately:
         │ analytics / cats    │                │ Telegram bot (webhook)   │
         └─────────────────────┘                └───────────┬──────────────┘
                                                             │
-Telegram (text/voice) ──► faster-whisper ─► rule parser ─► │
+Telegram (text/voice) ──► Groq Whisper large-v3 ─► Groq Llama 3.3 ─► │
+                          (or local faster-whisper + rule parser)   │
                                                             ▼
                                               PostgreSQL (Supabase)
 ```
@@ -46,8 +63,9 @@ ACKs immediately and processes in the background, all reports aggregate in SQL
 | Frontend | Static HTML + Tailwind (CDN) + Chart.js + vanilla JS | **Vercel** |
 | Backend | FastAPI, aiogram 3, SQLAlchemy 2 (async), PyJWT | **Render** |
 | Database | PostgreSQL | **Supabase** |
-| AI (free) | rule-based extractor + `faster-whisper` (local) | in backend |
-| AI (optional) | OpenAI Whisper + GPT structured output | set `AI_PROVIDER=openai` |
+| AI (primary, free) | Groq — Whisper large-v3 (voice) + Llama 3.3 70B (parsing) | set `GROQ_API_KEY` |
+| AI (offline fallback) | rule-based extractor + `faster-whisper` (local) | no keys needed |
+| AI (optional, paid) | OpenAI Whisper + GPT structured output | set `AI_PROVIDER=openai` |
 
 ## Project layout
 
@@ -56,7 +74,8 @@ app/                     BACKEND (FastAPI)
   main.py                app: API + auth + Telegram webhook
   config.py  db.py  models.py  schemas.py  security.py
   services/              transactions, categories, analytics, budgets, users
-  ai/                    extract (dispatcher), rule_extract (free), transcribe, openai_*
+  ai/                    extract (dispatcher), groq_extract (primary), rule_extract (offline
+                         fallback), transcribe (Groq/local), openai_* (optional)
   bot/                   pipeline (intent logic), handlers, instance
   web/                   api.py (JSON), auth.py, auth_routes.py
 frontend/                FRONTEND (static, deploy to Vercel)
@@ -96,34 +115,49 @@ Open http://localhost:5500 → use **dev-login** (id = 1) to see the demo data.
 
 ### 3. Enable the Telegram bot (free)
 1. Create a bot with [@BotFather](https://t.me/BotFather) → copy the token.
-2. In `.env` set `TELEGRAM_BOT_TOKEN=...` (leave `AI_PROVIDER=local` — free).
-3. Restart the backend. The bot starts in **long-polling** mode (no public
+2. In `.env` set `TELEGRAM_BOT_TOKEN=...`.
+3. (Recommended) Get a **free** Groq key at
+   [console.groq.com/keys](https://console.groq.com/keys) (no card) and set
+   `GROQ_API_KEY=...` — this gives much better accuracy on messy/accented
+   Uzbek voice than the offline fallback. Without it, the bot still works
+   fully offline via the rule-based parser + local `faster-whisper`.
+4. Restart the backend. The bot starts in **long-polling** mode (no public
    URL needed). Message it: “Bugun sotuvdan 2 mln keldi”, or send a voice note.
 
-> First voice message downloads the `faster-whisper` model once (a few seconds).
+> Without `GROQ_API_KEY`, the first voice message downloads the local
+> `faster-whisper` model once (a few seconds).
 
 ---
 
-## Deploy (all free tiers)
+## Deploy (all free tiers — this is exactly how the live demo above is deployed)
 
 **1. Database — Supabase**
-Create a project → copy the connection string → convert to async form:
-`postgresql+asyncpg://USER:PASS@HOST:5432/postgres`.
+Create a project → Connect → **Transaction pooler** → copy the URI → convert
+to async form: `postgresql+asyncpg://postgres.PROJECT:PASSWORD@HOST:6543/postgres`.
+`app/db.py` already disables asyncpg's statement cache for pgbouncer compatibility.
 
-**2. Backend — Render** (Blueprint from `render.yaml`)
-Set env vars: `DATABASE_URL` (Supabase), `TELEGRAM_BOT_TOKEN`,
-`TELEGRAM_WEBHOOK_SECRET` (random), `WEBHOOK_BASE_URL` (this service's URL),
-`CORS_ORIGINS` (your Vercel URL). On startup the app auto-registers the
-Telegram webhook. `AI_PROVIDER=local`, `WHISPER_MODEL=tiny` (fits free RAM).
+**2. Backend — Render** (Web Service, Python; `render.yaml` documents the env vars)
+Root: repo root. Build: `pip install -r requirements.txt`. Start:
+`uvicorn app.main:app --host 0.0.0.0 --port $PORT`. Add a `PYTHON_VERSION=3.11.9`
+env var (Render defaults to a newer Python that breaks `pydantic-core`'s build).
+Set: `DATABASE_URL` (Supabase, above), `TELEGRAM_BOT_TOKEN`, `GROQ_API_KEY`
+(free, from [console.groq.com](https://console.groq.com/keys)),
+`TELEGRAM_WEBHOOK_SECRET` (random string), `WEBHOOK_BASE_URL` (this service's
+own URL, e.g. `https://pultrack-api.onrender.com`), `CORS_ORIGINS` (your Vercel
+URL, comma-separated if you have both the custom and auto-generated domain).
+On startup the app auto-registers the Telegram webhook at `WEBHOOK_BASE_URL`.
 
 **3. Frontend — Vercel**
-Set project root to `frontend/`. Edit `frontend/config.js`:
-`PULTRACK_API` = your Render URL, `PULTRACK_BOT_USERNAME` = your bot's username.
+Import the repo → set **Root Directory** to `frontend` → no build command
+needed (static files) → Deploy. Then edit `frontend/config.js`:
+`PULTRACK_API` = your Render URL, `PULTRACK_BOT_USERNAME` = your bot's
+username → commit + push (Vercel redeploys automatically).
 
 **4. Telegram Login Widget**
-In @BotFather: `/setdomain` → your Vercel domain, so “Log in with Telegram”
-works on the deployed dashboard. Reviewers can then log in and see only their
-own data.
+In @BotFather: `/mybots` → your bot → **Bot Settings** → **Domain** →
+**Set domain** → type your Vercel domain (e.g. `pul-track.vercel.app`) as a
+plain chat message. Reviewers can then log in with their own Telegram account
+and see only their own data.
 
 ---
 
@@ -133,7 +167,7 @@ own data.
 |---------|----------|
 | "Bugun sotuvdan 2 mln keldi" | logs income 2,000,000 · Sotuv |
 | "Logistikaga 500 ming xarajat" | logs expense 500,000 · Logistika |
-| 🎤 voice note | transcribes (faster-whisper), then logs |
+| 🎤 voice note | transcribes (Groq Whisper large-v3, or local fallback), then logs |
 | "Bu oy logistikaga qancha ketdi?" | reports the total |
 | "500 ming" (ambiguous) | asks: income or expense? |
 | "oxirgisini o'chir" | deletes the last transaction |
@@ -147,8 +181,8 @@ own data.
 
 PulTrack lets a busy Uzbek business owner record every som of income and
 expense the fastest way possible — by texting or speaking to a Telegram bot in
-Uzbek or Russian. Voice is transcribed locally, intent and amounts are parsed
-("2 mln" → 2,000,000), and every entry is confirmed, with a follow-up whenever
+Uzbek or Russian. Voice is transcribed and understood by free AI (Groq), intent
+and amounts are parsed ("2 mln" → 2,000,000), and every entry is confirmed, with a follow-up whenever
 something is unclear so nothing is lost. A separate web dashboard, secured by
 Telegram login, turns that stream into a live picture per business: income vs
 expense, category breakdowns, monthly trends, and budget alerts. It runs
