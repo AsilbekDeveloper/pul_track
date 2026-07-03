@@ -4,43 +4,61 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PulTrack — Kirish</title>
+  <script>
+    // Apply saved theme before paint to avoid a light->dark flash.
+    if ((localStorage.getItem('pt_theme') || 'light') === 'dark') document.documentElement.classList.add('dark');
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' };</script>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex items-center justify-center p-4">
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex items-center justify-center p-4 transition-colors">
+  <button class="btn-theme-toggle fixed top-4 right-4 w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" title="Dark/Light">🌙</button>
+  <div class="fixed top-4 left-4 flex gap-1">
+    <button data-lang="uz" class="px-2 py-1 rounded text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300">UZ</button>
+    <button data-lang="ru" class="px-2 py-1 rounded text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300">RU</button>
+    <button data-lang="en" class="px-2 py-1 rounded text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300">EN</button>
+  </div>
+
   <div class="w-full max-w-md">
     <div class="text-center mb-6">
-      <div class="text-3xl font-bold text-slate-900">Pul<span class="text-emerald-600">Track</span></div>
-      <div class="text-sm text-slate-500 mt-1">Biznes moliya boshqaruvi</div>
+      <div class="text-3xl font-bold text-slate-900 dark:text-white">Pul<span class="text-emerald-600 dark:text-emerald-400">Track</span></div>
+      <div class="text-sm text-slate-500 dark:text-slate-400 mt-1" data-i18n="app_tagline"></div>
     </div>
 
-    <div class="bg-white rounded-2xl border border-slate-200 p-8 text-center">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 text-center transition-colors">
       <div class="text-4xl mb-3">💼</div>
-      <h1 class="text-lg font-semibold text-slate-900">Dashboard'ga kiring</h1>
-      <p class="text-sm text-slate-500 mt-1 mb-6">
-        Telegram akkountingiz bilan kiring — faqat o'z ma'lumotlaringizni ko'rasiz.
-      </p>
+      <h1 class="text-lg font-semibold text-slate-900 dark:text-white" data-i18n="login_title"></h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-6" data-i18n="login_sub"></p>
 
       <!-- Telegram Login Widget mounts here -->
       <div id="tg-login" class="flex justify-center"></div>
 
       <!-- Dev login (localhost only) -->
-      <div id="dev-login" class="hidden mt-6 pt-6 border-t border-slate-100">
-        <div class="text-xs text-slate-400 mb-2">Lokal test (dev-login)</div>
+      <div id="dev-login" class="hidden mt-6 pt-6 border-t border-slate-100 dark:border-slate-700">
+        <div class="text-xs text-slate-400 dark:text-slate-500 mb-2" data-i18n="login_dev_label"></div>
         <div class="flex gap-2">
-          <input id="dev-id" type="number" value="1" class="w-24 px-3 py-2 border border-slate-200 rounded-lg text-sm" placeholder="TG id">
-          <button onclick="devLogin()" class="flex-1 py-2 rounded-lg bg-slate-900 text-white text-sm font-medium">Kirish</button>
+          <input id="dev-id" type="number" value="1" class="w-24 px-3 py-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm" placeholder="TG id">
+          <button onclick="devLogin()" class="flex-1 py-2 rounded-lg bg-slate-900 dark:bg-emerald-600 text-white text-sm font-medium" data-i18n="login_dev_button"></button>
         </div>
-        <div class="text-xs text-slate-400 mt-2">Demo ma'lumot uchun id = 1</div>
+        <div class="text-xs text-slate-400 dark:text-slate-500 mt-2" data-i18n="login_dev_hint"></div>
       </div>
     </div>
   </div>
 
   <div id="toast" class="fixed bottom-5 right-5 hidden px-4 py-2 rounded-lg bg-slate-900 text-white text-sm shadow-lg"></div>
 
+  <script src="i18n.js"></script>
   <script src="config.js"></script>
   <script src="app.js"></script>
   <script>
+    applyI18n();
+    document.querySelectorAll("[data-lang]").forEach(btn => { btn.onclick = () => setLang(btn.dataset.lang); });
+    document.querySelectorAll(".btn-theme-toggle").forEach(btn => {
+      btn.textContent = getTheme() === "dark" ? "☀️" : "🌙";
+      btn.onclick = toggleTheme;
+    });
+
     // Bot-issued login link (?bot_token=...) — sent by the bot's /login
     // command. Bypasses the Telegram Login Widget entirely; the token is
     // already a valid signed JWT from our backend, so we use it directly.
@@ -77,7 +95,7 @@
         document.getElementById("tg-login").appendChild(s);
       } else {
         document.getElementById("tg-login").innerHTML =
-          '<div class="text-xs text-amber-600">Bot username config.js da sozlanmagan</div>';
+          `<div class="text-xs text-amber-600">${t("login_bot_missing")}</div>`;
       }
     })();
 

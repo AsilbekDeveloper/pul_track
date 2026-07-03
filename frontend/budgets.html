@@ -4,41 +4,45 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PulTrack — Byudjet</title>
+  <script>
+    if ((localStorage.getItem('pt_theme') || 'light') === 'dark') document.documentElement.classList.add('dark');
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' };</script>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-slate-50 text-slate-800">
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors">
   <div class="flex min-h-screen">
     <div id="sidebar-slot"></div>
     <main class="flex-1 min-w-0">
-      <header class="h-14 border-b border-slate-200 bg-white flex items-center justify-between px-6">
-        <h1 class="text-base font-semibold text-slate-800">Byudjet</h1>
-        <button id="btn-refresh" title="Yangilash" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700">🔄</button>
+      <header class="h-14 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-between px-6 transition-colors">
+        <h1 class="text-base font-semibold text-slate-800 dark:text-white" data-i18n="bg_title"></h1>
+        <button id="btn-refresh" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700" data-i18n-title="common_refresh">🔄</button>
       </header>
       <div class="p-6 max-w-4xl">
-        <div class="bg-white rounded-xl border border-slate-200 p-5 mb-6">
-          <h2 class="font-semibold text-slate-800 mb-4">Yangi byudjet belgilash</h2>
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 mb-6 transition-colors">
+          <h2 class="font-semibold text-slate-800 dark:text-white mb-4" data-i18n="bg_new"></h2>
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
             <div>
-              <label class="text-xs text-slate-500">Oy</label>
-              <input id="b-month" type="month" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+              <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="bg_month"></label>
+              <input id="b-month" type="month" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm">
             </div>
             <div>
-              <label class="text-xs text-slate-500">Kategoriya</label>
-              <select id="b-category" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
-                <option value="">Umumiy (barcha xarajat)</option>
+              <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="bg_category"></label>
+              <select id="b-category" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm">
+                <option value="" data-i18n="bg_overall"></option>
               </select>
             </div>
             <div>
-              <label class="text-xs text-slate-500">Limit (so'm)</label>
-              <input id="b-limit" type="number" placeholder="masalan 2000000" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+              <label class="text-xs text-slate-500 dark:text-slate-400" data-i18n="bg_limit"></label>
+              <input id="b-limit" type="number" data-i18n-ph="bg_limit_ph" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm">
             </div>
-            <button id="b-submit" class="py-2 rounded-lg bg-slate-900 text-white text-sm font-medium">Saqlash</button>
+            <button id="b-submit" class="py-2 rounded-lg bg-slate-900 dark:bg-emerald-600 text-white text-sm font-medium" data-i18n="bg_save"></button>
           </div>
         </div>
 
-        <div class="bg-white rounded-xl border border-slate-200 p-5">
-          <h2 class="font-semibold text-slate-800 mb-4">Joriy oy byudjetlari</h2>
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 transition-colors">
+          <h2 class="font-semibold text-slate-800 dark:text-white mb-4" data-i18n="bg_current"></h2>
           <div id="list" class="space-y-4"></div>
         </div>
       </div>
@@ -46,6 +50,7 @@
   </div>
   <div id="toast" class="fixed bottom-5 right-5 hidden px-4 py-2 rounded-lg bg-slate-900 text-white text-sm shadow-lg"></div>
 
+  <script src="i18n.js"></script>
   <script src="config.js"></script>
   <script src="app.js"></script>
   <script>
@@ -60,26 +65,26 @@
     function budgetRow(b) {
       const pct = Math.min(b.pct, 100);
       return `
-        <div class="border border-slate-100 rounded-lg p-4">
+        <div class="border border-slate-100 dark:border-slate-700 rounded-lg p-4">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-sm font-medium text-slate-800">${b.category}</span>
+            <span class="text-sm font-medium text-slate-800 dark:text-slate-100">${b.category}</span>
             <div class="flex items-center gap-3">
-              <span class="text-sm text-slate-500">${fmtMoney(b.spent)} / ${fmtMoney(b.limit)} (${b.pct}%)</span>
+              <span class="text-sm text-slate-500 dark:text-slate-400">${fmtMoney(b.spent)} / ${fmtMoney(b.limit)} (${b.pct}%)</span>
               <button class="text-slate-400 hover:text-rose-600 text-sm" data-del="${b.budget_id}">🗑</button>
             </div>
           </div>
-          <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div class="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
             <div class="h-full ${barColor(b.pct, b.over)}" style="width:${pct}%"></div>
           </div>
-          ${b.alert ? `<div class="text-xs mt-1 ${b.over ? 'text-rose-600' : 'text-amber-600'}">
-            ${b.over ? '⚠️ Limitdan oshdi' : '⚠️ Limitga yaqinlashmoqda'}</div>` : ""}
+          ${b.alert ? `<div class="text-xs mt-1 ${b.over ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}">
+            ${b.over ? t("bg_over") : t("bg_near")}</div>` : ""}
         </div>`;
     }
 
     async function loadCategories() {
       const cats = (await apiGet("/api/categories?type=expense")) || [];
       const sel = document.getElementById("b-category");
-      sel.innerHTML = `<option value="">Umumiy (barcha xarajat)</option>` +
+      sel.innerHTML = `<option value="">${t("bg_overall")}</option>` +
         cats.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
     }
 
@@ -88,16 +93,16 @@
       const list = (await apiGet("/api/budgets?month=" + month)) || [];
       document.getElementById("list").innerHTML = list.length
         ? list.map(budgetRow).join("")
-        : '<div class="text-sm text-slate-400 py-8 text-center">Bu oy uchun byudjet belgilanmagan</div>';
+        : `<div class="text-sm text-slate-400 dark:text-slate-500 py-8 text-center">${t("bg_none")}</div>`;
       document.querySelectorAll("[data-del]").forEach(btn => btn.onclick = async () => {
-        if (!confirm("Byudjet o'chirilsinmi?")) return;
-        if (await apiDelete("/api/budgets/" + btn.dataset.del)) { toast("O'chirildi 🗑"); load(); }
+        if (!confirm(t("bg_confirm_delete"))) return;
+        if (await apiDelete("/api/budgets/" + btn.dataset.del)) { toast(t("bg_deleted")); load(); }
       });
     }
 
     document.getElementById("b-submit").onclick = async () => {
       const limit = Number(document.getElementById("b-limit").value);
-      if (!limit || limit <= 0) return toast("Limitni kiriting");
+      if (!limit || limit <= 0) return toast(t("bg_enter_limit"));
       const cid = document.getElementById("b-category").value;
       const month = document.getElementById("b-month").value || currentMonth();
       const ok = await apiPost("/api/budgets", {
@@ -105,7 +110,7 @@
         category_id: cid ? Number(cid) : null,
       });
       if (ok) {
-        toast("Saqlandi ✅");
+        toast(t("bg_saved"));
         document.getElementById("b-limit").value = "";
         load();
       }
@@ -115,6 +120,7 @@
     document.getElementById("btn-refresh").onclick = () =>
       withSpin(document.getElementById("btn-refresh"), load);
 
+    applyI18n();
     if (requireAuth()) {
       renderNav("budgets");
       document.getElementById("b-month").value = currentMonth();

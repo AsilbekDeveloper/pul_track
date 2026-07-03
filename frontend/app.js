@@ -1,4 +1,5 @@
 // Shared helpers: auth, API calls, layout, formatting.
+// Note: i18n.js (t, getLang, setLang, toggleTheme, applyI18n) must load before this file.
 
 const API = window.PULTRACK_API;
 const TOKEN_KEY = "pt_token";
@@ -21,9 +22,7 @@ async function api(method, path, body) {
   // Render's free tier spins down after inactivity — the first request can
   // take 30-50s. Let the user know instead of leaving them staring at a
   // blank page.
-  const wakeTimer = setTimeout(() => {
-    toast("🌙 Server uyg'onmoqda (bepul tarif) — biroz kuting...");
-  }, 3000);
+  const wakeTimer = setTimeout(() => toast(t("common_waking")), 3000);
 
   let res;
   try {
@@ -34,14 +33,14 @@ async function api(method, path, body) {
     });
   } catch (e) {
     clearTimeout(wakeTimer);
-    toast("Serverga ulanib bo'lmadi");
+    toast(t("common_no_connection"));
     return null;
   }
   clearTimeout(wakeTimer);
   if (res.status === 401) { logout(); return null; }
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    toast(err.detail || "Xatolik yuz berdi");
+    toast(err.detail || t("common_error"));
     return null;
   }
   return res.status === 204 ? true : await res.json();
@@ -88,35 +87,55 @@ function autoRefresh(fn, intervalMs = 20000) {
 // Inject the sidebar into #sidebar-slot and mark the active page.
 async function renderNav(active) {
   const items = [
-    ["overview", "overview.html", "Umumiy", "▦"],
-    ["transactions", "transactions.html", "Tranzaksiyalar", "≡"],
-    ["analytics", "analytics.html", "Analitika", "◔"],
-    ["categories", "categories.html", "Kategoriyalar", "⬡"],
-    ["budgets", "budgets.html", "Byudjet", "◆"],
+    ["overview", "overview.html", t("nav_overview"), "▦"],
+    ["transactions", "transactions.html", t("nav_transactions"), "≡"],
+    ["analytics", "analytics.html", t("nav_analytics"), "◔"],
+    ["categories", "categories.html", t("nav_categories"), "⬡"],
+    ["budgets", "budgets.html", t("nav_budgets"), "◆"],
   ];
   const links = items.map(([key, href, label, icon]) => `
     <a href="${href}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition
-       ${active === key ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50"}">
+       ${active === key
+         ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
+         : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700/50"}">
       <span class="w-5 text-center">${icon}</span>${label}
     </a>`).join("");
+
+  const lang = getLang();
+  const langBtn = (code, label) => `
+    <button data-lang="${code}" class="px-2 py-1 rounded text-xs font-semibold ${
+      lang === code
+        ? "bg-slate-900 text-white dark:bg-emerald-600"
+        : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300"
+    }">${label}</button>`;
 
   const slot = document.getElementById("sidebar-slot");
   if (slot) {
     slot.outerHTML = `
-      <aside class="w-full md:w-60 md:shrink-0 border-b md:border-b-0 md:border-r border-slate-200 bg-white flex flex-col">
-        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between md:block">
+      <aside class="w-full md:w-60 md:shrink-0 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col transition-colors">
+        <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between md:block">
           <div>
-            <div class="text-xl font-bold text-slate-900">Pul<span class="text-emerald-600">Track</span></div>
-            <div class="text-xs text-slate-400 mt-0.5 hidden md:block">Biznes moliya</div>
+            <div class="text-xl font-bold text-slate-900 dark:text-white">Pul<span class="text-emerald-600 dark:text-emerald-400">Track</span></div>
+            <div class="text-xs text-slate-400 dark:text-slate-500 mt-0.5 hidden md:block">${t("app_tagline")}</div>
           </div>
+          <button class="btn-theme-toggle md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700" title="Dark/Light">${getTheme() === "dark" ? "☀️" : "🌙"}</button>
         </div>
         <nav class="p-3 flex md:block gap-1 overflow-x-auto md:overflow-visible space-y-0 md:space-y-1 text-sm font-medium">${links}</nav>
-        <div class="hidden md:flex mt-auto p-4 border-t border-slate-100 flex-col">
-          <div id="nav-user" class="text-sm text-slate-600 mb-2 truncate"></div>
-          <button onclick="logout()" class="text-xs text-slate-400 hover:text-rose-600 text-left">Chiqish →</button>
+        <div class="hidden md:flex mt-auto p-4 border-t border-slate-100 dark:border-slate-700 flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <div class="flex gap-1">${langBtn("uz", "UZ")}${langBtn("ru", "RU")}${langBtn("en", "EN")}</div>
+            <button class="btn-theme-toggle w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700" title="Dark/Light">${getTheme() === "dark" ? "☀️" : "🌙"}</button>
+          </div>
+          <div id="nav-user" class="text-sm text-slate-600 dark:text-slate-300 truncate"></div>
+          <button onclick="logout()" class="text-xs text-slate-400 hover:text-rose-600 text-left" data-i18n="nav_logout">${t("nav_logout")}</button>
         </div>
       </aside>`;
   }
+
+  document.querySelectorAll("[data-lang]").forEach(btn => {
+    btn.onclick = () => setLang(btn.dataset.lang);
+  });
+  document.querySelectorAll(".btn-theme-toggle").forEach(btn => { btn.onclick = toggleTheme; });
 
   const me = await apiGet("/api/auth/me");
   if (me) {

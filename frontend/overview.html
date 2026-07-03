@@ -4,16 +4,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PulTrack — Umumiy</title>
+  <script>
+    if ((localStorage.getItem('pt_theme') || 'light') === 'dark') document.documentElement.classList.add('dark');
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' };</script>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-slate-50 text-slate-800">
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors">
   <div class="flex min-h-screen">
     <div id="sidebar-slot"></div>
     <main class="flex-1 min-w-0">
-      <header class="h-14 border-b border-slate-200 bg-white flex items-center justify-between px-6">
-        <h1 class="text-base font-semibold text-slate-800">Umumiy ko'rinish</h1>
-        <button id="btn-refresh" title="Yangilash" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700">🔄</button>
+      <header class="h-14 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-between px-6 transition-colors">
+        <h1 class="text-base font-semibold text-slate-800 dark:text-white" data-i18n="ov_title"></h1>
+        <button id="btn-refresh" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700" data-i18n-title="common_refresh">🔄</button>
       </header>
       <div class="p-6 max-w-6xl">
         <div id="alerts" class="mb-5 space-y-2"></div>
@@ -21,24 +25,24 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <!-- Quick add -->
-          <div class="bg-white rounded-xl border border-slate-200 p-5">
-            <h2 class="font-semibold text-slate-800 mb-4">Tez qo'shish</h2>
+          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 transition-colors">
+            <h2 class="font-semibold text-slate-800 dark:text-white mb-4" data-i18n="ov_quick_add"></h2>
             <div class="flex gap-2 mb-3">
-              <button id="btn-expense" class="flex-1 py-2 rounded-lg text-sm font-medium bg-rose-600 text-white">Xarajat</button>
-              <button id="btn-income" class="flex-1 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600">Daromad</button>
+              <button id="btn-expense" class="flex-1 py-2 rounded-lg text-sm font-medium bg-rose-600 text-white" data-i18n="ov_expense"></button>
+              <button id="btn-income" class="flex-1 py-2 rounded-lg text-sm font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300" data-i18n="ov_income"></button>
             </div>
-            <input id="q-amount" type="number" placeholder="Summa (so'm)" class="w-full mb-2 px-3 py-2 border border-slate-200 rounded-lg text-sm">
-            <select id="q-category" class="w-full mb-2 px-3 py-2 border border-slate-200 rounded-lg text-sm"></select>
-            <input id="q-date" type="date" class="w-full mb-2 px-3 py-2 border border-slate-200 rounded-lg text-sm">
-            <input id="q-note" type="text" placeholder="Izoh (ixtiyoriy)" class="w-full mb-3 px-3 py-2 border border-slate-200 rounded-lg text-sm">
-            <button id="q-submit" class="w-full py-2 rounded-lg bg-slate-900 text-white text-sm font-medium">Qo'shish</button>
+            <input id="q-amount" type="number" data-i18n-ph="ov_amount_ph" class="w-full mb-2 px-3 py-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm">
+            <select id="q-category" class="w-full mb-2 px-3 py-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm"></select>
+            <input id="q-date" type="date" class="w-full mb-2 px-3 py-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm">
+            <input id="q-note" type="text" data-i18n-ph="ov_note_ph" class="w-full mb-3 px-3 py-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm">
+            <button id="q-submit" class="w-full py-2 rounded-lg bg-slate-900 dark:bg-emerald-600 text-white text-sm font-medium" data-i18n="ov_add_btn"></button>
           </div>
 
           <!-- Recent -->
-          <div class="bg-white rounded-xl border border-slate-200 p-5 lg:col-span-2">
-            <h2 class="font-semibold text-slate-800 mb-4">So'nggi tranzaksiyalar</h2>
-            <div id="recent" class="divide-y divide-slate-100"></div>
-            <a href="transactions.html" class="inline-block mt-4 text-sm text-emerald-600 font-medium">Barchasini ko'rish →</a>
+          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 lg:col-span-2 transition-colors">
+            <h2 class="font-semibold text-slate-800 dark:text-white mb-4" data-i18n="ov_recent"></h2>
+            <div id="recent" class="divide-y divide-slate-100 dark:divide-slate-700"></div>
+            <a href="transactions.html" class="inline-block mt-4 text-sm text-emerald-600 dark:text-emerald-400 font-medium" data-i18n="ov_see_all"></a>
           </div>
         </div>
       </div>
@@ -46,6 +50,7 @@
   </div>
   <div id="toast" class="fixed bottom-5 right-5 hidden px-4 py-2 rounded-lg bg-slate-900 text-white text-sm shadow-lg"></div>
 
+  <script src="i18n.js"></script>
   <script src="config.js"></script>
   <script src="app.js"></script>
   <script>
@@ -56,15 +61,15 @@
       if (prev && prev > 0) {
         const pct = ((now - prev) / prev * 100);
         const up = pct >= 0;
-        return `<span class="${up ? 'text-emerald-600' : 'text-rose-600'}">${up ? '▲' : '▼'} ${Math.abs(pct).toFixed(1)}%</span>
-                <span class="text-slate-400">o'tgan oyga nisbatan</span>`;
+        return `<span class="${up ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">${up ? '▲' : '▼'} ${Math.abs(pct).toFixed(1)}%</span>
+                <span class="text-slate-400 dark:text-slate-500">${t("ov_vs_last")}</span>`;
       }
-      return `<span class="text-slate-400">o'tgan oy ma'lumoti yo'q</span>`;
+      return `<span class="text-slate-400 dark:text-slate-500">${t("ov_no_last")}</span>`;
     }
 
     function kpiCard(title, value, cls, sub) {
-      return `<div class="bg-white rounded-xl border border-slate-200 p-5">
-        <div class="text-xs text-slate-500 uppercase tracking-wide">${title}</div>
+      return `<div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 transition-colors">
+        <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">${title}</div>
         <div class="text-2xl font-bold ${cls} mt-1">${fmtMoney(value)}</div>
         <div class="text-xs mt-2">${sub}</div></div>`;
     }
@@ -73,15 +78,15 @@
       const sel = document.getElementById("q-category");
       const opts = allCats.filter(c => c.type === qType)
         .map(c => `<option value="${c.id}">${c.name}</option>`).join("");
-      sel.innerHTML = `<option value="">Kategoriya (ixtiyoriy)</option>` + opts;
+      sel.innerHTML = `<option value="">${t("ov_category_ph")}</option>` + opts;
     }
 
-    function setType(t) {
-      qType = t;
+    function setType(type) {
+      qType = type;
       document.getElementById("btn-expense").className =
-        "flex-1 py-2 rounded-lg text-sm font-medium " + (t === "expense" ? "bg-rose-600 text-white" : "bg-slate-100 text-slate-600");
+        "flex-1 py-2 rounded-lg text-sm font-medium " + (type === "expense" ? "bg-rose-600 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300");
       document.getElementById("btn-income").className =
-        "flex-1 py-2 rounded-lg text-sm font-medium " + (t === "income" ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600");
+        "flex-1 py-2 rounded-lg text-sm font-medium " + (type === "income" ? "bg-emerald-600 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300");
       renderCategoryOptions();
     }
 
@@ -95,31 +100,31 @@
       const tm = ov.totals.this_month, lm = ov.totals.last_month;
 
       document.getElementById("kpis").innerHTML =
-        kpiCard("Bu oy · Daromad", tm.income, "text-emerald-600", delta(tm.income, lm.income)) +
-        kpiCard("Bu oy · Xarajat", tm.expense, "text-rose-600", delta(tm.expense, lm.expense)) +
-        kpiCard("Bu oy · Sof foyda", tm.net, tm.net >= 0 ? "text-slate-900" : "text-rose-600", delta(tm.net, lm.net));
+        kpiCard(t("ov_kpi_income"), tm.income, "text-emerald-600 dark:text-emerald-400", delta(tm.income, lm.income)) +
+        kpiCard(t("ov_kpi_expense"), tm.expense, "text-rose-600 dark:text-rose-400", delta(tm.expense, lm.expense)) +
+        kpiCard(t("ov_kpi_net"), tm.net, tm.net >= 0 ? "text-slate-900 dark:text-white" : "text-rose-600 dark:text-rose-400", delta(tm.net, lm.net));
 
       document.getElementById("alerts").innerHTML = (ov.alerts || []).map(a => `
-        <div class="flex items-center gap-3 px-4 py-3 rounded-xl border ${a.over ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-amber-200 bg-amber-50 text-amber-700'}">
-          <span>⚠️</span><span class="text-sm font-medium">«${a.category}» byudjeti: ${fmtMoney(a.spent)} / ${fmtMoney(a.limit)} (${a.pct}%)
-          ${a.over ? '— limitdan oshdi!' : '— limitga yaqinlashyapti'}</span></div>`).join("");
+        <div class="flex items-center gap-3 px-4 py-3 rounded-xl border ${a.over ? 'border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300' : 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'}">
+          <span>⚠️</span><span class="text-sm font-medium">«${a.category}» ${t("ov_budget_word")}: ${fmtMoney(a.spent)} / ${fmtMoney(a.limit)} (${a.pct}%)
+          — ${a.over ? t("ov_over_budget") : t("ov_near_budget")}</span></div>`).join("");
 
-      document.getElementById("recent").innerHTML = (ov.recent || []).map(t => `
+      document.getElementById("recent").innerHTML = (ov.recent || []).map(tx => `
         <div class="flex items-center justify-between py-3">
           <div>
-            <div class="text-sm font-medium text-slate-800">${t.category || 'Kategoriyasiz'}</div>
-            <div class="text-xs text-slate-400">${t.occurred_at.split('-').reverse().join('.')}${t.note ? ' · ' + t.note : ''}</div>
+            <div class="text-sm font-medium text-slate-800 dark:text-slate-100">${tx.category || t("ov_no_category")}</div>
+            <div class="text-xs text-slate-400 dark:text-slate-500">${tx.occurred_at.split('-').reverse().join('.')}${tx.note ? ' · ' + tx.note : ''}</div>
           </div>
-          <div class="text-sm font-semibold ${t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}">
-            ${t.type === 'income' ? '+' : '−'}${fmtMoney(t.amount)}</div>
-        </div>`).join("") || '<div class="text-sm text-slate-400 py-4">Hali tranzaksiya yo\'q</div>';
+          <div class="text-sm font-semibold ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">
+            ${tx.type === 'income' ? '+' : '−'}${fmtMoney(tx.amount)}</div>
+        </div>`).join("") || `<div class="text-sm text-slate-400 dark:text-slate-500 py-4">${t("ov_no_tx")}</div>`;
     }
 
     document.getElementById("btn-expense").onclick = () => setType("expense");
     document.getElementById("btn-income").onclick = () => setType("income");
     document.getElementById("q-submit").onclick = async () => {
       const amount = Number(document.getElementById("q-amount").value);
-      if (!amount || amount <= 0) return toast("Summani kiriting");
+      if (!amount || amount <= 0) return toast(t("ov_enter_amount"));
       const cid = document.getElementById("q-category").value;
       const ok = await apiPost("/api/transactions", {
         type: qType, amount,
@@ -127,13 +132,14 @@
         occurred_at: document.getElementById("q-date").value,
         note: document.getElementById("q-note").value || null,
       });
-      if (ok) { toast("Qo'shildi ✅"); setTimeout(load, 300);
+      if (ok) { toast(t("ov_added")); setTimeout(load, 300);
         document.getElementById("q-amount").value = ""; document.getElementById("q-note").value = ""; }
     };
 
     document.getElementById("btn-refresh").onclick = () =>
       withSpin(document.getElementById("btn-refresh"), load);
 
+    applyI18n();
     if (requireAuth()) {
       renderNav("overview"); setType("expense"); load();
       autoRefresh(load, 20000); // picks up transactions logged via the bot
