@@ -56,6 +56,10 @@ class Settings(BaseSettings):
     # Dashboard (legacy single-tenant fallback, kept for the seed demo)
     dashboard_user_id: int | None = None
 
+    # Temporary, secret-gated login for demoing production before the
+    # Telegram Login Widget is fully verified. Empty = disabled.
+    demo_access_key: str = ""
+
     @field_validator("dashboard_user_id", "redis_url", mode="before")
     @classmethod
     def _blank_to_none(cls, v):

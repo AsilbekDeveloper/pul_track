@@ -1,7 +1,7 @@
 """Auth endpoints: Telegram Login Widget, dev-login (local), and /me."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -59,6 +59,29 @@ async def dev_login(
     """
     if settings.app_env != "development":
         raise HTTPException(status_code=403, detail="dev-login o'chirilgan")
+    user = await get_or_create_user(session, payload.telegram_user_id, payload.name)
+    await session.commit()
+    return {
+        "access_token": create_access_token(user.id, user.telegram_user_id),
+        "user": _user_dict(user),
+    }
+
+
+@router.post("/demo-login")
+async def demo_login(
+    payload: DevLogin,
+    x_demo_key: str | None = Header(default=None),
+    session: AsyncSession = Depends(get_session),
+):
+    """Secret-gated login for demoing the deployed dashboard.
+
+    Requires DEMO_ACCESS_KEY to be set on the server AND matched by the
+    X-Demo-Key header — unlike dev-login, this works in production too, but
+    only for whoever holds the secret key. Meant to be temporary, until the
+    Telegram Login Widget flow is confirmed working end-to-end.
+    """
+    if not settings.demo_access_key or x_demo_key != settings.demo_access_key:
+        raise HTTPException(status_code=403, detail="demo-login o'chirilgan")
     user = await get_or_create_user(session, payload.telegram_user_id, payload.name)
     await session.commit()
     return {

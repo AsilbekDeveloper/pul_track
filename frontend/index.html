@@ -80,6 +80,28 @@
       if (data && data.access_token) { setToken(data.access_token); location.href = "overview.html"; }
     }
     window.devLogin = devLogin;
+
+    // Temporary: ?demo_key=...&tg_id=...[&name=...] logs in via the secret
+    // demo-login endpoint, for testing the deployed dashboard before the
+    // Telegram Login Widget flow is confirmed end-to-end. Remove once done.
+    (async function demoLoginFromUrl() {
+      const p = new URLSearchParams(location.search);
+      const demoKey = p.get("demo_key");
+      const tgId = p.get("tg_id");
+      if (!demoKey || !tgId) return;
+      const res = await fetch(API + "/api/auth/demo-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Demo-Key": demoKey },
+        body: JSON.stringify({ telegram_user_id: Number(tgId), name: p.get("name") || null }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setToken(data.access_token);
+        location.href = "overview.html";
+      } else {
+        toast("Demo login xato: " + res.status);
+      }
+    })();
   </script>
 </body>
 </html>
