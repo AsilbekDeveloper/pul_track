@@ -199,16 +199,13 @@ plain chat message.
 
 ## Product brief
 
-PulTrack helps a small business owner in Uzbekistan track money the easy way.
-The owner just texts or talks to a Telegram bot — in Uzbek or Russian — to log
-sales and costs. Free AI reads the voice message and understands the amount
-("2 mln" means 2,000,000) and the category. The bot always confirms what it
-saved, and asks a question if something is unclear, so nothing gets lost. A
-web dashboard shows the same data as clear charts and tables: income,
-expenses, trends, and budget alerts. The dashboard works in three languages
-and has a dark mode. Everything runs on free hosting, so it costs nothing to
-run. It replaces messy Excel sheets or paper notebooks with a two-minute daily
-habit.
+PulTrack helps a small business owner in Uzbekistan track money the easy way:
+just text or talk to a Telegram bot, in Uzbek or Russian, to log sales and
+costs. Free AI reads the message, understands the amount and category, and
+always confirms what it saved — asking a question instead of failing when
+something is unclear. A web dashboard (in three languages, with dark mode)
+turns that data into charts, trends, and budget alerts. It runs entirely on
+free hosting and replaces messy Excel sheets with a two-minute daily habit.
 
 ## What I'd add in 3 more days
 
