@@ -21,6 +21,9 @@ engine = create_async_engine(
     pool_pre_ping=True,    # drop dead connections transparently
     pool_recycle=1800,     # recycle every 30 min (cloud PG idle timeouts)
     echo=False,
+    # Disable asyncpg's prepared-statement cache so we stay compatible with
+    # pgbouncer poolers (e.g. Supabase transaction pooler). Harmless locally.
+    connect_args={"statement_cache_size": 0},
 )
 
 SessionFactory = async_sessionmaker(
